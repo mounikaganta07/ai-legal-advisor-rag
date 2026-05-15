@@ -12,9 +12,11 @@ from app.llm.openrouter_client import (
     generate_response
 )
 
-def legal_chatbot(query):
+def legal_chatbot(message, history):
 
-    docs = hybrid_retrieve(query)
+    docs = hybrid_retrieve(
+        message
+    )
 
     context = "\n\n".join([
         doc.page_content
@@ -23,16 +25,17 @@ def legal_chatbot(query):
 
     prompt = build_legal_prompt(
         context,
-        query
+        message
     )
 
     answer = generate_response(
         prompt
     )
 
-    sources = "\n\n".join([
+    formatted_sources = "\n\n".join([
 
-        f"""Source {i+1}:
+        f"""
+### Source {i+1}
 
 Article Number:
 {doc.metadata.get('article_number', 'N/A')}
@@ -41,7 +44,7 @@ Title:
 {doc.metadata.get('article_title', 'N/A')}
 
 Content:
-{doc.page_content[:700]}
+{doc.page_content[:500]}
 """
 
         for i, doc in enumerate(docs)
@@ -49,35 +52,27 @@ Content:
     ])
 
     final_response = f"""
-ANSWER:
 {answer}
 
------------------------------------
+---
 
-RETRIEVED SOURCES:
+## Retrieved Legal Sources
 
-{sources}
+{formatted_sources}
 """
 
     return final_response
 
-interface = gr.Interface(
+chat_interface = gr.ChatInterface(
 
     fn=legal_chatbot,
-
-    inputs=gr.Textbox(
-        lines=2,
-        placeholder="Ask a legal question..."
-    ),
-
-    outputs="text",
 
     title="AI Legal Advisor",
 
     description=(
-        "Advanced RAG-powered legal assistant "
-        "with hybrid legal retrieval"
+        "Hybrid RAG-powered legal assistant "
+        "with deterministic article retrieval"
     )
 )
 
-interface.launch()
+chat_interface.launch()
