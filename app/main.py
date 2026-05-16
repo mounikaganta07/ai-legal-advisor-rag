@@ -12,10 +12,45 @@ from app.llm.openrouter_client import (
     generate_response
 )
 
+def build_conversation_context(history):
+
+    conversation_context = ""
+
+    for message in history:
+
+        if message["role"] == "user":
+
+            conversation_context += (
+                f"User: {message['content']}\n"
+            )
+
+        elif message["role"] == "assistant":
+
+            conversation_context += (
+                f"Assistant: {message['content']}\n\n"
+            )
+
+    return conversation_context
+
 def legal_chatbot(message, history):
 
+    previous_context = (
+        build_conversation_context(
+            history
+        )
+    )
+
+    enhanced_query = f"""
+Previous Conversation:
+
+{previous_context}
+
+Current User Question:
+{message}
+"""
+
     docs = hybrid_retrieve(
-        message
+        enhanced_query
     )
 
     context = "\n\n".join([
@@ -25,7 +60,7 @@ def legal_chatbot(message, history):
 
     prompt = build_legal_prompt(
         context,
-        message
+        enhanced_query
     )
 
     answer = generate_response(
@@ -47,7 +82,7 @@ Content:
 {doc.page_content[:500]}
 """
 
-        for i, doc in enumerate(docs)
+        for i, doc in enumerate(docs[:3])
 
     ])
 
@@ -67,11 +102,22 @@ chat_interface = gr.ChatInterface(
 
     fn=legal_chatbot,
 
-    title="AI Legal Advisor",
+    title="⚖️ AI Legal Advisor",
 
     description=(
-        "Hybrid RAG-powered legal assistant "
-        "with deterministic article retrieval"
+        "Conversational legal assistant "
+        "powered by Hybrid RAG"
+    ),
+
+    chatbot=gr.Chatbot(
+        height=650
+    ),
+
+    textbox=gr.Textbox(
+        placeholder=(
+            "Ask a legal question and press Enter..."
+        ),
+        container=False
     )
 )
 
