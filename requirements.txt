@@ -1,10 +1,10 @@
+gradio
 langchain
 langchain-community
-langchain-openai
-langchain-huggingface
 faiss-cpu
 sentence-transformers
+rank-bm25
 pypdf
-gradio
 python-dotenv
-openai
+requests
+numpy

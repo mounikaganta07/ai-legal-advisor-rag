@@ -10,25 +10,63 @@ from app.utils.config import (
     TOP_K_RESULTS
 )
 
+# -----------------------------------
+# LOAD VECTOR STORE
+# -----------------------------------
+
 vectorstore = load_vectorstore()
 
+# -----------------------------------
+# IMPROVED RETRIEVER
+# -----------------------------------
+
 retriever = vectorstore.as_retriever(
-    search_type="similarity",
-    search_kwargs={"k": 10}
+
+    search_type="mmr",
+
+    search_kwargs={
+        "k": 15,
+        "fetch_k": 30
+    }
 )
+
+# -----------------------------------
+# LOAD ALL DOCUMENTS
+# -----------------------------------
 
 all_docs = list(
     vectorstore.docstore._dict.values()
 )
 
+# -----------------------------------
+# BM25 SETUP
+# -----------------------------------
+
 bm25_corpus = [
-    doc.page_content.split()
+
+    (
+        (
+            doc.metadata.get(
+                "article_title",
+                ""
+            )
+            +
+            " "
+            +
+            doc.page_content
+        ).split()
+    )
+
     for doc in all_docs
 ]
 
 bm25 = BM25Okapi(
     bm25_corpus
 )
+
+# -----------------------------------
+# NOISE FILTERING
+# -----------------------------------
 
 NOISE_PATTERNS = [
     "amendment act",
@@ -66,15 +104,74 @@ def is_noisy_chunk(text):
 
     return False
 
+# -----------------------------------
+# QUERY EXPANSION
+# -----------------------------------
+
+LEGAL_QUERY_EXPANSIONS = {
+
+    "personal liberty": (
+        "life and personal liberty"
+    ),
+
+    "writs": (
+        "constitutional remedies supreme court writs"
+    ),
+
+    "directive principles": (
+        "governance state welfare principles"
+    ),
+
+    "emergency suspension": (
+        "suspension of fundamental rights emergency"
+    ),
+
+    "international treaties": (
+        "international agreements parliament law"
+    ),
+
+    "supreme court directly": (
+        "constitutional remedies supreme court"
+    )
+}
+
+def expand_query(query):
+
+    expanded_query = query.lower()
+
+    for phrase, expansion in (
+        LEGAL_QUERY_EXPANSIONS.items()
+    ):
+
+        if phrase in expanded_query:
+
+            expanded_query += (
+                " " + expansion
+            )
+
+    return expanded_query
+
+# -----------------------------------
+# HYBRID RETRIEVAL
+# -----------------------------------
+
 def hybrid_retrieve(query):
+
+    expanded_query = expand_query(
+        query
+    )
 
     exact_article_docs = []
 
     article_match = re.search(
         r'article\s+(\d+[A-Z]?)',
-        query,
+        expanded_query,
         re.IGNORECASE
     )
+
+    # -----------------------------------
+    # EXACT ARTICLE MATCH
+    # -----------------------------------
 
     if article_match:
 
@@ -99,20 +196,34 @@ def hybrid_retrieve(query):
                     doc
                 )
 
+    # -----------------------------------
+    # SEMANTIC RETRIEVAL
+    # -----------------------------------
+
     semantic_docs = retriever.invoke(
-        query
+        expanded_query
     )
 
-    tokenized_query = query.split()
+    # -----------------------------------
+    # BM25 RETRIEVAL
+    # -----------------------------------
+
+    tokenized_query = (
+        expanded_query.split()
+    )
 
     bm25_scores = bm25.get_scores(
         tokenized_query
     )
 
     top_bm25_indices = sorted(
+
         range(len(bm25_scores)),
+
         key=lambda i: bm25_scores[i],
+
         reverse=True
+
     )[:10]
 
     bm25_docs = [
@@ -120,9 +231,19 @@ def hybrid_retrieve(query):
         for i in top_bm25_indices
     ]
 
+    # -----------------------------------
+    # COMBINE RESULTS
+    # -----------------------------------
+
     if exact_article_docs:
 
-        combined_docs = exact_article_docs
+        combined_docs = (
+            exact_article_docs
+            +
+            semantic_docs
+            +
+            bm25_docs
+        )
 
     else:
 
@@ -131,6 +252,10 @@ def hybrid_retrieve(query):
             +
             bm25_docs
         )
+
+    # -----------------------------------
+    # DEDUPLICATION
+    # -----------------------------------
 
     unique_docs = []
 
