@@ -1,18 +1,26 @@
 # AI Legal Advisor
 
-A Hybrid RAG-based conversational legal assistant built using LangChain, FAISS, BM25 retrieval, Sentence Transformers, and OpenRouter LLM APIs.
+A Hybrid RAG-based conversational legal assistant for Indian legal documents.  
+It answers user queries using retrieved legal sources from uploaded PDFs and provides source-grounded responses.
 
 ## Features
 
-- Hybrid Retrieval (Semantic Search + BM25)
-- Conversational Memory
-- Constitution-based Legal Question Answering
-- Source-grounded Responses
+- Hybrid Retrieval using Semantic Search + BM25
 - FAISS Vector Database
-- Gradio-based Chat Interface
+- Sentence Transformer Embeddings
 - Query Expansion for Legal Terminology
+- Rule-based Retrieval Boosting
+- Conversational Follow-up Handling
+- Source-grounded Legal Responses
+- Gradio-based Chat Interface
 - Retrieval Evaluation and Benchmarking
 - Top-K and Top-1 Retrieval Metrics
+
+## Legal Documents Used
+
+- Constitution of India
+- Dowry Prohibition Act, 1961
+- Protection of Women from Domestic Violence Act, 2005
 
 ## Tech Stack
 
@@ -32,17 +40,39 @@ ai-legal-advisor/
 │── app/
 │   │
 │   ├── evaluation/
+│   │   └── evaluate_retrieval.py
+│   │
 │   ├── ingestion/
+│   │   ├── document_loader.py
+│   │   ├── legal_structure_parser.py
+│   │   ├── metadata_processor.py
+│   │   ├── text_chunker.py
+│   │   └── vector_builder.py
+│   │
 │   ├── llm/
+│   │   └── openrouter_client.py
+│   │
 │   ├── prompts/
+│   │   └── legal_prompt.py
+│   │
 │   ├── retrieval/
+│   │   ├── hybrid_retriever.py
+│   │   ├── retriever.py
+│   │   └── vector_store.py
+│   │
 │   ├── utils/
+│   │   └── config.py
 │   │
 │   ├── main.py
 │   └── rag_pipeline.py
 │
 │── data/
 │   └── legal_docs/
+│
+│── screenshots/
+│   ├── LA1.png
+│   ├── LA2.png
+│   └── LA3.png
 │
 │── tests/
 │
@@ -69,10 +99,24 @@ Create a `.env` file in the project root:
 OPENROUTER_API_KEY=your_api_key
 ```
 
+## Build Vector Database
+
+Run the ingestion pipeline before starting the app:
+
+```bash
+python -m app.ingestion.vector_builder
+```
+
 ## Run Application
 
 ```bash
 python -m app.main
+```
+
+The Gradio app will run locally at:
+
+```bash
+http://127.0.0.1:7860
 ```
 
 ## Evaluation
@@ -86,30 +130,69 @@ python -m app.evaluation.evaluate_retrieval
 ### Current Retrieval Performance
 
 | Metric | Score |
-|---|---|
-| Top-K Retrieval Accuracy | 86.67% |
-| Top-1 Retrieval Accuracy | 80.00% |
+|---|---:|
+| Top-K Retrieval Accuracy | 90.91% |
+| Top-1 Retrieval Accuracy | 90.91% |
 
-Evaluation performed on a paraphrased constitutional law benchmark dataset.
+Evaluation was performed on a small custom legal query dataset covering Constitution, Dowry Prohibition Act, and Domestic Violence Act queries.
+
+## Screenshots
+
+### Article 21 Query
+
+![Article 21 Query](screenshots/LA1.png)
+
+### Dowry Law Query
+
+![Dowry Law Query](screenshots/LA2.png)
+
+### Domestic Violence Query
+
+![Domestic Violence Query](screenshots/LA3.png)
 
 ## Example Questions
 
 - What is Article 21?
-- Can the government take away personal liberty?
-- Explain directive principles
-- What gives Supreme Court power to issue writs?
-- Which article discusses suspension of fundamental rights during emergency?
+- Can Article 21 be suspended during emergency?
+- Can Article 19 be suspended?
+- What are writs?
+- What is punishment for demanding dowry?
+- What can a Dowry Prohibition Officer do?
+- Does verbal abuse come under domestic violence?
+- Can emotional abuse be domestic violence?
+
+## Limitations
+
+- This project is for educational and demonstration purposes only.
+- It does not provide professional legal advice.
+- The evaluation dataset is small and domain-specific.
+- The system depends on the quality of retrieved legal document chunks.
+- More legal documents and larger test sets are needed for production-level reliability.
 
 ## Future Improvements
 
 - Cross-encoder reranking
 - Legal-specific embedding models
+- Larger evaluation dataset
+- Better citation ranking
 - Streaming responses
-- Advanced citation ranking
-- Multi-document support
 - Cloud deployment
 - User authentication and chat history
+- Support for more Indian laws and legal documents
 
-## Author
+## Disclaimer
 
-Mounika Ganta
+This AI Legal Advisor is an educational project.  
+It should not be treated as a substitute for professional legal advice.  
+For real legal issues, users should consult a qualified legal professional.
+
+## Authors / Contributors
+
+- Ganta Naga Venkata Mounika — Retrieval pipeline, query handling, evaluation workflow, and system integration
+- Bhargav Balaram Ramajukatum — RAG development support and research analysis
+- Gummadi Sarveswar Raj — Backend support, testing, and validation
+- Chapalamadugu Vasavi — Legal document collection and documentation
+
+## Project Guide
+
+- Aravind Chandran
