@@ -142,13 +142,14 @@ Evaluation was performed on a small custom legal query dataset covering Constitu
 
 ![Article 21 Query](screenshots/LA1.png)
 
+### Article 21 Suspension Follow-up
+
+![Article 21 Suspension Follow-up](screenshots/LA2.png)
+
 ### Dowry Law Query
 
-![Dowry Law Query](screenshots/LA2.png)
+![Dowry Law Query](screenshots/LA3.png)
 
-### Domestic Violence Query
-
-![Domestic Violence Query](screenshots/LA3.png)
 
 ## Example Questions
 
