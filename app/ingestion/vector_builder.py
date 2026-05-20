@@ -56,3 +56,6 @@ def build_vector_database():
     vectorstore.save_local("vector_db")
 
     print("\nVector database created successfully!")
+
+if __name__ == "__main__":
+    build_vector_database()

@@ -2,246 +2,194 @@ from app.retrieval.hybrid_retriever import (
     hybrid_retrieve
 )
 
-# -----------------------------------
-# HARDER EVALUATION DATASET
-# -----------------------------------
 
 test_questions = [
 
+    # -------------------------------
+    # Constitution
+    # -------------------------------
+
     {
         "question": "What is Article 21?",
-        "expected_article": "21"
+        "expected_type": "article",
+        "expected_number": "21"
     },
 
     {
         "question": "Can the government take away personal liberty?",
-        "expected_article": "21"
+        "expected_type": "article",
+        "expected_number": "21"
     },
 
     {
-        "question": "Which article protects life and liberty?",
-        "expected_article": "21"
-    },
-
-    {
-        "question": "Explain directive principles",
-        "expected_article": "37"
-    },
-
-    {
-        "question": "Which constitutional provisions guide welfare governance?",
-        "expected_article": "37"
-    },
-
-    {
-        "question": "Are directive principles enforceable in court?",
-        "expected_article": "37"
-    },
-
-    {
-        "question": "What is right to constitutional remedies?",
-        "expected_article": "32"
-    },
-
-    {
-        "question": "Which article allows citizens to approach Supreme Court directly?",
-        "expected_article": "32"
-    },
-
-    {
-        "question": "What gives Supreme Court power to issue writs?",
-        "expected_article": "32"
-    },
-
-    {
-        "question": "Who can make laws for international treaties?",
-        "expected_article": "253"
-    },
-
-    {
-        "question": "Which authority implements international agreements?",
-        "expected_article": "253"
-    },
-
-    {
-        "question": "What are obligations of states and union?",
-        "expected_article": "256"
-    },
-
-    {
-        "question": "Which article ensures states follow parliamentary laws?",
-        "expected_article": "256"
+        "question": "What are writs?",
+        "expected_type": "article",
+        "expected_number": "32"
     },
 
     {
         "question": "Can Article 21 be suspended during emergency?",
-        "expected_article": "359"
+        "expected_type": "article",
+        "expected_number": "359"
     },
 
     {
-        "question": "Which article discusses suspension of fundamental rights during emergency?",
-        "expected_article": "359"
-    }
+        "question": "Can Article 19 be suspended?",
+        "expected_type": "article",
+        "expected_number": "359"
+    },
 
+    # -------------------------------
+    # Dowry Prohibition Act
+    # -------------------------------
+
+    {
+        "question": "What is punishment for demanding dowry?",
+        "expected_type": "section",
+        "expected_number": "4"
+    },
+
+    {
+        "question": "What are the charges for dowry?",
+        "expected_type": "section",
+        "expected_number": "3"
+    },
+
+    {
+        "question": "What can a dowry prohibition officer do?",
+        "expected_type": "section",
+        "expected_number": "8B"
+    },
+
+    # -------------------------------
+    # Domestic Violence Act
+    # -------------------------------
+
+    {
+        "question": "Does verbal abuse come under domestic violence?",
+        "expected_type": "section",
+        "expected_number": "3"
+    },
+
+    {
+        "question": "Can emotional abuse be domestic violence?",
+        "expected_type": "section",
+        "expected_number": "3"
+    },
+
+    {
+        "question": "What protection can a woman get under domestic violence law?",
+        "expected_type": "section",
+        "expected_number": "9"
+    }
 ]
 
-# -----------------------------------
-# EVALUATION VARIABLES
-# -----------------------------------
 
-correct_retrievals = 0
-
-top1_correct = 0
-
+correct_topk = 0
+correct_top1 = 0
 total_questions = len(test_questions)
 
-print("\n" + "="*60)
+print("\n" + "=" * 70)
 print("LEGAL RAG RETRIEVAL EVALUATION")
-print("="*60)
+print("=" * 70)
 
-# -----------------------------------
-# TEST LOOP
-# -----------------------------------
+
+def get_doc_provision(doc):
+    provision_type = str(
+        doc.metadata.get("provision_type", "")
+    ).lower()
+
+    if provision_type == "article":
+        number = str(
+            doc.metadata.get("article_number", "")
+        ).upper()
+
+    elif provision_type == "section":
+        number = str(
+            doc.metadata.get("section_number", "")
+        ).upper()
+
+    else:
+        number = "N/A"
+
+    return provision_type, number
+
 
 for index, item in enumerate(test_questions):
 
     question = item["question"]
 
-    expected_article = (
-        item["expected_article"]
-    )
+    expected_type = item["expected_type"].lower()
 
-    print(f"\nTest Case {index+1}")
-    print("-"*40)
+    expected_number = item["expected_number"].upper()
 
+    print(f"\nTest Case {index + 1}")
+    print("-" * 50)
     print(f"Question: {question}")
+    print(f"Expected: {expected_type.title()} {expected_number}")
 
     docs = hybrid_retrieve(question)
 
-    retrieved_articles = []
+    retrieved = []
 
     for doc in docs:
+        provision_type, number = get_doc_provision(doc)
 
-        article_number = (
-            doc.metadata.get(
-                "article_number",
-                "N/A"
-            )
+        retrieved.append(
+            f"{provision_type.title()} {number}"
         )
 
-        retrieved_articles.append(
-            str(article_number)
-        )
+    print(f"Retrieved: {retrieved}")
 
-    print(
-        f"Expected Article: "
-        f"{expected_article}"
+    expected_label = (
+        expected_type,
+        expected_number
     )
 
-    print(
-        f"Retrieved Articles: "
-        f"{retrieved_articles}"
-    )
+    retrieved_labels = [
+        get_doc_provision(doc)
+        for doc in docs
+    ]
 
-    # -----------------------------------
-    # TOP-K ACCURACY
-    # -----------------------------------
-
-    if expected_article in retrieved_articles:
-
+    if expected_label in retrieved_labels:
         print("Top-K Result: CORRECT")
-
-        correct_retrievals += 1
-
+        correct_topk += 1
     else:
-
         print("Top-K Result: INCORRECT")
 
-    # -----------------------------------
-    # TOP-1 ACCURACY
-    # -----------------------------------
-
-    if len(retrieved_articles) > 0:
-
-        if retrieved_articles[0] == expected_article:
-
+    if retrieved_labels:
+        if retrieved_labels[0] == expected_label:
             print("Top-1 Result: CORRECT")
-
-            top1_correct += 1
-
+            correct_top1 += 1
         else:
-
             print("Top-1 Result: INCORRECT")
 
-# -----------------------------------
-# FINAL METRICS
-# -----------------------------------
 
 topk_accuracy = (
-    correct_retrievals
-    / total_questions
+    correct_topk / total_questions
 ) * 100
 
 top1_accuracy = (
-    top1_correct
-    / total_questions
+    correct_top1 / total_questions
 ) * 100
 
-print("\n" + "="*60)
+print("\n" + "=" * 70)
 print("FINAL EVALUATION RESULTS")
-print("="*60)
+print("=" * 70)
 
-print(
-    f"\nTotal Questions: "
-    f"{total_questions}"
-)
-
-print(
-    f"Correct Top-K Retrievals: "
-    f"{correct_retrievals}"
-)
-
-print(
-    f"Correct Top-1 Retrievals: "
-    f"{top1_correct}"
-)
-
-print(
-    f"\nTop-K Retrieval Accuracy: "
-    f"{topk_accuracy:.2f}%"
-)
-
-print(
-    f"Top-1 Retrieval Accuracy: "
-    f"{top1_accuracy:.2f}%"
-)
-
-# -----------------------------------
-# PERFORMANCE ANALYSIS
-# -----------------------------------
+print(f"Total Questions: {total_questions}")
+print(f"Correct Top-K Retrievals: {correct_topk}")
+print(f"Correct Top-1 Retrievals: {correct_top1}")
+print(f"Top-K Retrieval Accuracy: {topk_accuracy:.2f}%")
+print(f"Top-1 Retrieval Accuracy: {top1_accuracy:.2f}%")
 
 if top1_accuracy >= 90:
-
-    print(
-        "\nPerformance: EXCELLENT"
-    )
-
+    print("\nPerformance: EXCELLENT")
 elif top1_accuracy >= 75:
-
-    print(
-        "\nPerformance: GOOD"
-    )
-
+    print("\nPerformance: GOOD")
 elif top1_accuracy >= 50:
-
-    print(
-        "\nPerformance: AVERAGE"
-    )
-
+    print("\nPerformance: AVERAGE")
 else:
+    print("\nPerformance: NEEDS IMPROVEMENT")
 
-    print(
-        "\nPerformance: NEEDS IMPROVEMENT"
-    )
-
-print("\n" + "="*60)
+print("\n" + "=" * 70)
